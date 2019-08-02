@@ -1,8 +1,8 @@
 #pragma once
 #include <iostream>
 #include "mongoose.h"
-#include "mysqlclient.hpp"
-#include "Util.hpp"
+#include "MysqlClient.hpp"
+//#include "Util.hpp"
 
 using std::cout;
 using std::endl;
@@ -47,7 +47,7 @@ class IMServer
         }
         case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
         {
-          string msg = "有人来了...";
+          string msg = "有新人加入...";
           boardcast(_nc, msg);
         }
         case MG_EV_WEBSOCKET_FRAME: //New websocket message.
