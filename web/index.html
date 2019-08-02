@@ -30,7 +30,7 @@
 <script language="javascript" type="text/javascript">
 
   var rooms = [];
-  var ws = new WebSocket('ws://' + location.host + '/ws');
+  var ws = new WebSocket('ws://' + location.host + '/ws'); //升级协议为websocket
 
   if (!window.console) { window.console = { log: function() {} } };
 
@@ -64,13 +64,7 @@
     <h1>Websocket PubSub Demonstration</h1>
 
     <p>
-      This page demonstrates how Mongoose could be used to implement
-      <a href="http://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern">
-       publish–subscribe pattern</a>. Open this page in several browser
-       windows. Each window initiates persistent
-       <a href="http://en.wikipedia.org/wiki/WebSocket">WebSocket</a>
-      connection with the server, making each browser window a websocket client.
-      Send messages, and see messages sent by other clients.
+      这是一个基于mongoose框架的多人聊天室
     </p>
 
     <div id="messages">
