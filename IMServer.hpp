@@ -34,7 +34,7 @@ class IMServer
       {
         case MG_EV_HTTP_REQUEST:
         {
-          mg_serve_http(_nc, (struct http_message *)ev_data, s_http_server_opts); //段错误
+          mg_serve_http(_nc, (struct http_message *)ev_data, s_http_server_opts);
           //_nc:客户端（发起请求方）套接字信息
           //(http_message *)ev_data:请求报文信息
           //s_http_server_opts:服务器端响应选项，对于http请求，响应什么
