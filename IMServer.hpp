@@ -61,6 +61,16 @@ class IMServer
           break;
       }
     }
+    static void login_hander(struct mg_connection *_nc, int ev, void *ev_data)
+    {
+      struct http_message *hm = (struct http_message *)ev_data;
+      
+      cout << "event: " << ev << " body: " << Util::mg_str_2_string(hm->body);
+    }
+    static void signup_hander(struct mg_connection *_nc, int ev, void *ev_data)
+    {
+
+    }
     void InitServer()
     {
       mg_mgr_init(&mgr, NULL);
@@ -69,6 +79,9 @@ class IMServer
       s_http_server_opts.document_root = "./web/";
       //s_http_server_opts.index_files = "index.html";
       s_http_server_opts.enable_directory_listing = "yes"; //是否禁用目录列表
+      mg_register_http_endpoint(nc, "/login", login_hander);
+      //为指定的http端点指定回调，注意:如果注册了回调函数，它将被调用，而不是，mg_bind中提供的回调
+      mg_register_http_endpoint(nc, "/signin", signup_hander);
     }
     void Run()
     {
