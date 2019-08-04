@@ -54,9 +54,25 @@ public:
         return false;
     return true;
   }
-  void SelectUser()
+  bool SelectUser(const string& username, const string& passwd)
   {
-    //mysql_query("SELECT * FROM user");
+    MysqlConnect();
+    string query("SELECT * FROM user WHERE username=");
+    query += (username + " AND " + "password=" + passwd);
+    int ret = mysql_query(con, query.c_str());
+    MysqlClose();
+    if(ret != 0) 
+    {
+      cerr << "mysql_query failed!" << endl;
+      return false;
+    }
+    MYSQL_RES *select_ret = mysql_store_result(con);
+    my_ulonglong rows = mysql_num_rows(select_ret);
+    if(rows == 0)
+    {
+      return false;
+    }
+    return true;
   }
   
 };

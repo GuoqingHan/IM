@@ -306,7 +306,6 @@
                         <input type="button" value="Log in" class="btn" onclick="login()" style="margin-right: 20px;">
                         <input type="button" value="Sign in" class="btn" onclick='signin()' id="btn">
                     </form>
-                    <a href="#">Forget your password?</a>
                 </span>
             </div>
 
@@ -337,9 +336,9 @@
 <script>
     var onoff = true//根据此布尔值判断当前为注册状态还是登录状态
     var confirm = document.getElementsByClassName("confirm")[0]
-    //var user = document.getElementById("user")
-    //var passwd = document.getElementById("passwd")
-    //var con_pass = document.getElementById("confirm-passwd")
+    var user = document.getelementbyid("user")
+    var passwd = document.getelementbyid("passwd")
+    var con_pass = document.getelementbyid("confirm-passwd")
     
     //自动居中title
     var name_c = document.getElementById("title")

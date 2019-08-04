@@ -18,6 +18,8 @@ class IMServer
     IMServer(std::string _port = "8080"):s_http_port(_port)
     {
     }
+
+    //广播消息
     static void boardcast(struct mg_connection *_nc, const string msg)
     {
       struct mg_connection *c; //遍历链表的临时变量
@@ -28,10 +30,13 @@ class IMServer
         //底层会将其封装为报文格式放入发送缓冲区
       }
     }
+
+    //向listen_socket注册的事件处理函数
     static void ev_hander(struct mg_connection *_nc, int ev, void *ev_data)
     {
       switch(ev)
       {
+        //HTTP请求事件
         case MG_EV_HTTP_REQUEST:
         {
           mg_serve_http(_nc, (struct http_message *)ev_data, s_http_server_opts);
@@ -40,16 +45,19 @@ class IMServer
           //s_http_server_opts:服务器端响应选项，对于http请求，响应什么
           break;
         }
+        //连接关闭事件
         case MG_EV_CLOSE:
         {
           cout << "Client quit." << endl;
           break;
         }
+        //升级websocket协议已完成
         case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
         {
           string msg = "有新人加入...";
           boardcast(_nc, msg);
         }
+        //新消息事件
         case MG_EV_WEBSOCKET_FRAME: //New websocket message.
         {
           struct websocket_message *wm = (struct websocket_message *)ev_data;
@@ -61,12 +69,14 @@ class IMServer
           break;
       }
     }
-    static void login_hander(struct mg_connection *_nc, int ev, void *ev_data)
+    //登录事件处理函数
+    static void signin_hander(struct mg_connection *_nc, int ev, void *ev_data)
     {
       struct http_message *hm = (struct http_message *)ev_data;
       
       cout << "event: " << ev << " body: " << Util::mg_str_2_string(hm->body);
     }
+    //注册事件处理函数
     static void signup_hander(struct mg_connection *_nc, int ev, void *ev_data)
     {
 
@@ -74,14 +84,17 @@ class IMServer
     void InitServer()
     {
       mg_mgr_init(&mgr, NULL);
+      //绑定port，注册事件处理方法
       nc = mg_bind(&mgr, s_http_port.c_str(), ev_hander); //address可选为仅端口号，也可以是IP:port
       mg_set_protocol_http_websocket(nc); //将内置的HTTP事件处理程序附加到给定连接，nc收到新的连接一开始为HTTP事件，是这样吗
-      s_http_server_opts.document_root = "./web/";
+      s_http_server_opts.document_root = "./www/";
       //s_http_server_opts.index_files = "index.html";
       s_http_server_opts.enable_directory_listing = "yes"; //是否禁用目录列表
-      mg_register_http_endpoint(nc, "/login", login_hander);
       //为指定的http端点指定回调，注意:如果注册了回调函数，它将被调用，而不是，mg_bind中提供的回调
-      mg_register_http_endpoint(nc, "/signin", signup_hander);
+      //注册访问登录页面时的处理方法
+      mg_register_http_endpoint(nc, "/signin", signin_hander);
+      //注册访问注册页面时的处理方法
+      mg_register_http_endpoint(nc, "/signup", signup_hander);
     }
     void Run()
     {
