@@ -28,7 +28,7 @@ class IMServer
       struct mg_connection *c; //遍历链表的临时变量
       for(c = mg_next(_nc->mgr, NULL); c != NULL; c = mg_next(_nc->mgr, c))
       {
-        mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, msg.c_str(), msg.size());
+        mg_send_websocket_frame(c, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
         //向c发送msg，信息类型为WEBSOCKET_OP_TEXT
         //底层会将其封装为报文格式放入发送缓冲区
       }
@@ -46,7 +46,6 @@ class IMServer
           //_nc:客户端（发起请求方）套接字信息
           //(http_message *)ev_data:请求报文信息
           //s_http_server_opts:服务器端响应选项，对于http请求，响应什么
-
 
           _nc->flags |= MG_F_SEND_AND_CLOSE; //响应后关闭连接
           break;
@@ -75,27 +74,27 @@ class IMServer
           break;
       }
     }
+
     //登录事件处理函数
     static void signin_hander(struct mg_connection *_nc, int ev, void *ev_data)
     {
-      if(ev == MG_EV_CLOSE) { //这个是什么连接关闭，会到这里？
+      if(ev == MG_EV_CLOSE) {
         return;
       }
       cout << "signin" << endl;
       struct http_message *hm = (struct http_message *)ev_data;
       string method = Util::mg_str_2_string(hm->method);
+      mg_printf(_nc, "HTTP/1.1 200 OK\r\n"); //HTTP response line
+      string code = "0";    
+      string body_json = "{\"result\":";
       if(method == "POST") {
         string jsonstr = Util::mg_str_2_string(hm->body);
         //jsonstr --> {"name":"1","passwd":"123"}
         std::unordered_map<string, string> kv; //name passwd
-        if(!Util::Json2Map(jsonstr, kv))
-          return;
-        string code = "0";    
-        string body_json = "{\"result\":";
+        Util::Json2Map(jsonstr, kv);
         //用户名密码不能为空
         if(!kv["name"].empty() && !kv["passwd"].empty()) {
           bool ret = sql.SelectUser(kv["name"], kv["passwd"]);
-          mg_printf(_nc, "HTTP/1.1 200 OK\r\n");
           if(ret) { //存在此用户
             cout << "true" << endl;
             //在服务器端创建session，返回session_id
@@ -109,38 +108,68 @@ class IMServer
         } else { //用户名或密码为空
           code = "2";
         }
-        body_json += (code + "}");
-        //存在正文，填充Content-Length字段
-        mg_printf(_nc, "Content-Length: %u\r\n\r\n", body_json.size()); 
-        mg_printf(_nc, body_json.data());
       } else { //请求方法不是POST
-        mg_serve_http(_nc, hm, s_http_server_opts);
+        //mg_serve_http(_nc, hm, s_http_server_opts);
+        code = "3";
       }
+      body_json += (code + "}");
+      //存在正文，填充Content-Length字段
+      mg_printf(_nc, "Content-Length: %u\r\n\r\n", body_json.size()); 
+      mg_printf(_nc, body_json.data());
       _nc->flags |= MG_F_SEND_AND_CLOSE; //响应完成后关闭连接
     }
+
     //注册事件处理函数
     static void signup_hander(struct mg_connection *_nc, int ev, void *ev_data)
     {
+      if(ev == MG_EV_CLOSE) {
+        return;
+      }
       cout << "signup" << endl;
-      //点击注册会阻塞在这里，再次点击才会打印信息
       struct http_message *hm = (struct http_message *)ev_data;
-      cout << "event: " << ev << " body: " << Util::mg_str_2_string(hm->body) << endl;
+      mg_printf(_nc, "HTTP/1.1 200 OK\r\n"); //HTTP response line
+      string code = "0";    
+      string body_json = "{\"result\":";
+      string method = Util::mg_str_2_string(hm->method);
+      if(method == "POST") {
+        string jsonstr = Util::mg_str_2_string(hm->body);
+        std::unordered_map<string, string> kv;
+        Util::Json2Map(jsonstr, kv);
+        if(!kv["name"].empty() && !kv["passwd"].empty()) {
+          bool ret = sql.InsertUser(kv["name"], kv["passwd"]);
+          if(ret) { //插入成功
+            code = "0";
+          } else {
+            code = "1";
+          }
+        } else {
+          code = "2";
+        }
+      } else {
+        code = "3";
+      }
+      body_json += (code + "}");
+      mg_printf(_nc, "Content-Length: %u\r\n\r\n", body_json.size());
+      mg_printf(_nc, body_json.data());
+      _nc->flags |= MG_F_SEND_AND_CLOSE; //发送完响应数据，关闭连接
     }
+
     void InitServer()
     {
       mg_mgr_init(&mgr, NULL); //会忽略掉SIGPIPE
       //绑定port，注册事件处理方法
       nc = mg_bind(&mgr, s_http_port.c_str(), ev_hander); //address可选为仅端口号，也可以是IP:port
-      mg_set_protocol_http_websocket(nc); //将内置的HTTP事件处理程序附加到给定连接，nc收到新的连接一开始为HTTP事件，是这样吗
+      mg_set_protocol_http_websocket(nc); //将内置的HTTP事件处理程序附加到nc连接
       s_http_server_opts.document_root = "./www/";
-      //s_http_server_opts.index_files = "index.html";
-      s_http_server_opts.enable_directory_listing = "yes"; //是否禁用目录列表
+
       //为指定的http端点指定回调，注意:如果注册了回调函数，它将被调用，而不是，mg_bind中提供的回调
+      //第二个参数url_path会根据请求url匹配，大小写不敏感，部分匹配也可通过
       //注册访问登录页面时的处理方法
-      mg_register_http_endpoint(nc, "/IN", signin_hander);
+      mg_register_http_endpoint(nc, "/S_IN", signin_hander);
       //注册访问注册页面时的处理方法
-      mg_register_http_endpoint(nc, "/UP", signup_hander);
+      mg_register_http_endpoint(nc, "/S_UP", signup_hander);
     }
+
     void Run()
     {
       printf("Started on port %s\n", s_http_port.c_str());
@@ -160,7 +189,6 @@ class IMServer
 MysqlClient IMServer::sql;
 
 
-//1.websocket长连接为什么会出现连接关闭事件
 //2.为什么会在聊天界面打印一条ws请求报文
 
 //注意：每一个连接都有一个读缓冲区和写缓冲区

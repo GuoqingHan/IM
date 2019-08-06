@@ -94,7 +94,7 @@
 
 	function signin(){
 			$.ajax({
-					url: "/IN",
+					url: "/S_IN",
 					type: "POST",
 					data: JSON.stringify({
 							name: user.value,
@@ -109,8 +109,11 @@
 							else if(data.result == 2){
 									alert("用户名或密码不能为空!")
 							}
+							else if(data.result == 3) {
+									alert("请求方法错误！");
+							}
 							else{
-									window.location.href='index.html'
+									window.location.href='index.html'  //在这里请求index.html
 							}
 					},
 					error: function(e){
@@ -119,14 +122,12 @@
 			});
 	}
 	function signup(){
-			alert(ruser.value)
-			alert(rpasswd.value)
 			if(rpasswd.value != rrpasswd.value){
 					alert("两次密码不一致，请重新输入!")
 					return;
 			}
 			$.ajax({
-					url: "/UP",
+					url: "/S_UP",
 					type: "POST",
 					data: JSON.stringify({
 							name: ruser.value,
@@ -136,10 +137,13 @@
 					contentType: "application/x-www-form-urlencoded; charset=UTF-8",
 					success: function(data){
 							if (data.result == 1 ){
-									alert("名字已经被占用，请更换名字再试!")
+									alert("该用户名已被占用，请更换后再试!")
 							}
 							else if(data.result == 2){
-									alert("请求方法错误!")
+									alert("用户名或密码不能为空!")
+							}
+							else if(data.result == 3) {
+									alert("请求方法错误!");
 							}
 							else{
 									alert("注册成功，请直接登录!")

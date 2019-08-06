@@ -23,8 +23,8 @@ public:
       return false;
     }
     Util::Load(DB_ETC, etc);
-    if(!mysql_real_connect(con, etc["host"].c_str(), etc["user"].c_str(), \
-      etc["passwd"].c_str(), etc["db"].c_str(), atoi(etc["port"].c_str()), nullptr, 0))
+    if(!mysql_real_connect(con, etc["host"].data(), etc["user"].data(), \
+      etc["passwd"].data(), etc["db"].data(), atoi(etc["port"].data()), nullptr, 0))
     {
       cerr << "mysql connect failed." << endl;
       return false;
@@ -47,7 +47,7 @@ public:
     MysqlConnect();
     string query("INSERT INTO user VALUES (\"");
     query += (name + "\", \"" + passwd + "\")");
-    int ret = mysql_query(con, query.c_str());
+    int ret = mysql_query(con, query.data());
     MysqlClose();
     if(ret != 0)
         return false;
@@ -63,8 +63,8 @@ public:
     }
     string query("SELECT * FROM user WHERE username=\"");
     query += (username + "\" AND " + "password=\"" + passwd + "\"");
-    cout << query << endl;
-    int ret = mysql_query(con, query.c_str());
+    //cout << query << endl;
+    int ret = mysql_query(con, query.data());
     if(ret != 0) 
     {
       cerr << "mysql_query failed!" << endl;
