@@ -78,7 +78,7 @@ class IMServer
         }
         case MG_EV_TIMER: {
           ss.CheckSession();
-          mg_set_timer(_nc, SESSION_CHECK_TIME);
+          mg_set_timer(_nc, mg_time() + SESSION_CHECK_TIME);
         }
         default:
           break;
@@ -176,6 +176,10 @@ class IMServer
     void InitServer()
     {
       mg_mgr_init(&mgr, NULL); //会忽略掉SIGPIPE
+
+      //Creates a listening connection.
+      //By default, a TCP connection is created.
+      //The connection remains owned by the manager.
       //绑定port，注册事件处理方法
       nc = mg_bind(&mgr, s_http_port.c_str(), ev_hander); //address可选为仅端口号，也可以是IP:port
       mg_set_protocol_http_websocket(nc); //将内置的HTTP事件处理程序附加到nc连接
@@ -187,7 +191,7 @@ class IMServer
       mg_register_http_endpoint(nc, "/S_IN", signin_hander);
       //注册访问注册页面时的处理方法
       mg_register_http_endpoint(nc, "/S_UP", signup_hander);
-      mg_set_timer(nc, SESSION_CHECK_TIME); //设置计时器，到时触发事件MG_EV_TIMER
+      mg_set_timer(nc, mg_time() + SESSION_CHECK_TIME); //设置计时器，到时触发事件MG_EV_TIMER
     }
 
     void Run()
@@ -196,8 +200,9 @@ class IMServer
       while(1)
       {
         mg_mgr_poll(&mgr, 1000); //第二个参数为等待时间，ms
-        //检查所有连接的IO就绪情况，有事件就绪，则触发响应的事件处理程序并返回。
-        //监听套接字的事件处理程序默认为ev_hander
+        //遍历所有连接，检查IO就绪情况，有事件就绪，监听连接有事件则处理维护所有连接的链表
+        //其他连接有事件则触发相应的事件处理程序并返回。
+        //事件处理程序默认为ev_hander
       }
     }
     ~IMServer()
