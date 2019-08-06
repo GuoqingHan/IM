@@ -221,4 +221,4 @@ Session IMServer::ss;
 
 //mgr --> iface
 
-//Cookie Session MySQL
+//Mongoose WebSoecket Cookie Session Ajax MySQL JsonCPP
