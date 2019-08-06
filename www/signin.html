@@ -113,6 +113,9 @@
 									alert("请求方法错误！");
 							}
 							else{
+									if(data.result == 4) {
+										alert("Sessions is full!");
+									}
 									window.location.href='index.html'  //在这里请求index.html
 							}
 					},

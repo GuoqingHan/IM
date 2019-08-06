@@ -5,6 +5,7 @@
 #include "Session.hpp"
 #include <json/json.h>
 #include <unordered_map>
+#include <sstream>
 
 using std::cout;
 using std::endl;
@@ -17,6 +18,7 @@ class IMServer
     std::string s_http_port;
     struct mg_connection *nc; //监听socket
     static MysqlClient sql;
+    static Session ss;
   public:
     IMServer(std::string _port = "8080"):s_http_port(_port)
     {
@@ -42,33 +44,41 @@ class IMServer
         //HTTP请求事件
         case MG_EV_HTTP_REQUEST:
         {
-          mg_serve_http(_nc, (struct http_message *)ev_data, s_http_server_opts); //请求什么返回什么
+          struct http_message *hm = (struct http_message *)ev_data;
+          string url = Util::mg_str_2_string(hm->uri);
+          //请求主页时，判断首部字段是否有cookie信息
+          if(url == "/" || url == "/index.html") {
+            if(ss.IsExistSession(hm)) { //cookie信息匹配
+              mg_serve_http(_nc, hm, s_http_server_opts); //返回主页
+            } else { //验证失败、没有cookie字段，重定向到登录页面
+              mg_http_send_redirect(_nc, 302, mg_mk_str("/signin.html"), mg_mk_str(nullptr));
+            }
+          } else { //非主页，如css/js文件
+            mg_serve_http(_nc, hm, s_http_server_opts);
+          }
+          //void mg_serve_http(mg_connection *nc, http_message *hm, mg_serve_http_opts opts)
           //_nc:客户端（发起请求方）套接字信息
           //(http_message *)ev_data:请求报文信息
           //s_http_server_opts:服务器端响应选项，对于http请求，响应什么
-
           _nc->flags |= MG_F_SEND_AND_CLOSE; //响应后关闭连接
-          break;
-        }
-        //连接关闭事件
-        case MG_EV_CLOSE:
-        {
-          //cout << "Client quit." << endl;
           break;
         }
         //升级websocket协议已完成
         case MG_EV_WEBSOCKET_HANDSHAKE_DONE:
         {
-          string msg = "有新人加入...";
+          string msg = "New friend coming...";
           boardcast(_nc, msg);
         }
-        //新消息事件
         case MG_EV_WEBSOCKET_FRAME: //New websocket message.
         {
           struct websocket_message *wm = (struct websocket_message *)ev_data;
           struct mg_str d = {(char *) wm->data, wm->size};
           string msg = Util::mg_str_2_string(d);
           boardcast(_nc, msg);
+        }
+        case MG_EV_TIMER: {
+          ss.CheckSession();
+          mg_set_timer(_nc, SESSION_CHECK_TIME);
         }
         default:
           break;
@@ -98,9 +108,18 @@ class IMServer
           if(ret) { //存在此用户
             cout << "true" << endl;
             //在服务器端创建session，返回session_id
-
-            //返回code = 0，浏览器可跳转到主页
-            code = "0";
+            uint64_t session_id;
+            if(ss.CreateSession(kv["name"], session_id)) {
+              //填充HTTP首部字段
+              std::stringstream sc;
+              sc << "Set-Cookie: " << SESSION_ID << "=" << session_id << "; path=/\r\n";
+              sc << "Set-Cookie: " << SESSION_NAME << "=" << kv["name"] << "; path=/\r\n";
+              mg_printf(_nc, sc.str().data());
+              //返回code = 0，浏览器跳转到主页
+              code = "0";
+            } else {
+              code = "4";
+            }
           }
           else { //不存在此用户
             code = "1";
@@ -168,6 +187,7 @@ class IMServer
       mg_register_http_endpoint(nc, "/S_IN", signin_hander);
       //注册访问注册页面时的处理方法
       mg_register_http_endpoint(nc, "/S_UP", signup_hander);
+      mg_set_timer(nc, SESSION_CHECK_TIME); //设置计时器，到时触发事件MG_EV_TIMER
     }
 
     void Run()
@@ -177,7 +197,7 @@ class IMServer
       {
         mg_mgr_poll(&mgr, 1000); //第二个参数为等待时间，ms
         //检查所有连接的IO就绪情况，有事件就绪，则触发响应的事件处理程序并返回。
-        //监听套接字的事件处理程序为ev_hander
+        //监听套接字的事件处理程序默认为ev_hander
       }
     }
     ~IMServer()
@@ -187,9 +207,10 @@ class IMServer
 };
 
 MysqlClient IMServer::sql;
+Session IMServer::ss;
 
 
-//2.为什么会在聊天界面打印一条ws请求报文
+//为什么会在聊天界面打印一条ws请求报文
 
 //注意：每一个连接都有一个读缓冲区和写缓冲区
 

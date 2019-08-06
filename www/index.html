@@ -48,7 +48,6 @@
 
     function GetCookie(name){
         var str_cookie = document.cookie;
-        alert(str_cookie);
         var arr_cookie = str_cookie.split("; ");
         for (var i = 0; i < arr_cookie.length; i++){
             var arr = arr_cookie[i].split("=");
@@ -78,7 +77,7 @@
   window.onload = function() {
     document.getElementById('send_button').onclick = function(ev) {
       var msg = document.getElementById('send_input').value;
-      var name = GetCookie("im_name");
+      var name = GetCookie("im_sname");
       var message = "<p id=\"user_name\">"
       message += name;
       message += "</p>";
