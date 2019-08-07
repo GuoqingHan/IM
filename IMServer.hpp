@@ -68,6 +68,7 @@ class IMServer
         {
           string msg = "New friend coming...";
           boardcast(_nc, msg);
+          break;
         }
         case MG_EV_WEBSOCKET_FRAME: //New websocket message.
         {
@@ -75,10 +76,12 @@ class IMServer
           struct mg_str d = {(char *) wm->data, wm->size};
           string msg = Util::mg_str_2_string(d);
           boardcast(_nc, msg);
+          break;
         }
         case MG_EV_TIMER: {
           ss.CheckSession();
           mg_set_timer(_nc, mg_time() + SESSION_CHECK_TIME);
+          break;
         }
         default:
           break;
@@ -216,10 +219,6 @@ class IMServer
 MysqlClient IMServer::sql;
 Session IMServer::ss;
 
-
-//为什么会在聊天界面打印一条ws请求报文
-
-//注意：每一个连接都有一个读缓冲区和写缓冲区
 
 //mgr --> iface
 
