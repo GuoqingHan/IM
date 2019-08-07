@@ -182,6 +182,8 @@ class IMServer
       //The connection remains owned by the manager.
       //绑定port，注册事件处理方法
       nc = mg_bind(&mgr, s_http_port.c_str(), ev_hander); //address可选为仅端口号，也可以是IP:port
+      // mg_set_protocol_http_websocket() function parses incoming data, 
+      // treats it as HTTP or WebSocket, and triggers high-level HTTP or WebSocket events.
       mg_set_protocol_http_websocket(nc); //将内置的HTTP事件处理程序附加到nc连接
       s_http_server_opts.document_root = "./www/";
 
