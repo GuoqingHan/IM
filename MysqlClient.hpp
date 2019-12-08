@@ -72,7 +72,10 @@ public:
     }
     MYSQL_RES *select_ret = mysql_store_result(con);
     my_ulonglong rows = mysql_num_rows(select_ret);
-    free(select_ret);
+    if (select_ret != NULL) {
+        mysql_free_result(select_ret); //use free() -> crash
+        select_ret = NULL;
+    }
     MysqlClose();
     return rows > 0;
   }
