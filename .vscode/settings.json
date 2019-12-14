@@ -2,5 +2,8 @@
   "files.associations": {
     "iostream": "cpp",
     "ostream": "cpp"
-  }
+  },
+  "editor.fontSize": 17,
+  "terminal.integrated.fontSize": 16,
+  "terminal.integrated.fontFamily": "'Fira Code'"
 }

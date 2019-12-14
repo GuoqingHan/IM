@@ -9,3 +9,5 @@ www/css/
 www/js/
 www/images/
 tags
+.vscode/settings.json
+.gitignore
