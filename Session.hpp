@@ -15,8 +15,7 @@ typedef struct session_info
   double last_use_time; //最后一次使用时间
 }session_t;
 
-class Session 
-{
+class Session {
 private:
   session_t sessions[SESSION_ARR_SIZE]; //用于存储服务器端session信息
 public:
